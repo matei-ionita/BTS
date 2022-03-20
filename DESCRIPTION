@@ -1,0 +1,13 @@
+Package: BTS
+Type: Package
+Title: Bayesian Tissue Selection for fine-mapping of genomic regions
+Version: 0.1
+Date: 2022-03-19
+Author: Matei Ionita
+Maintainer: Matei Ionita <matei.ionita@gmail.com>
+Description: Fast fitting and comparison of multiple Bayesian models for fine mapping, based on various functional annotations of genomic regions.
+License: GPL-3
+Encoding: UTF-8
+Imports: Rcpp (>= 1.0.8), ggplot2, magrittr, readr, stringr, tibble, dplyr
+LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 7.1.1
