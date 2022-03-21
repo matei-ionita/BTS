@@ -4,11 +4,9 @@
 \alias{compute_configs}
 \title{Enumerate configurations; compute and store likelihoods.}
 \usage{
-compute_configs(in_path, loci, d = 2, thresh = 12)
+compute_configs(path, loci, d = 2, thresh = 12)
 }
 \arguments{
-\item{in_path}{A path.}
-
 \item{loci}{A vector of locus names.}
 
 \item{d}{Maximal number of independent signals considered.}
@@ -16,6 +14,8 @@ compute_configs(in_path, loci, d = 2, thresh = 12)
 \item{thresh}{Numeric. Configurations are not stored if their log 
 Bayes factor is smaller than that of the size-1 configuration with 
 largest Bayes factor, minus the threshold.}
+
+\item{in_path}{A path.}
 }
 \description{
 Enumerate over all configurations with at most d

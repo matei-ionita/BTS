@@ -22,14 +22,14 @@ NULL
 #' Bayes factor is smaller than that of the size-1 configuration with 
 #' largest Bayes factor, minus the threshold.
 #' @export
-compute_configs <- function(in_path, loci, d=2, thresh=12) {
+compute_configs <- function(path, loci, d=2, thresh=12) {
   if (thresh < 10)
     warning("Using a threshold smaller than 10 may lead to inexact results.")
   
-  ld_matrices <- lapply(loci, FUN=read_ld_matrix, path=in_path, reg=1e-5)
+  ld_matrices <- lapply(loci, FUN=read_ld_matrix, path=path, reg=1e-5)
   names(ld_matrices) <- loci
 
-  z_scores <- lapply(loci, FUN=read_z_scores, path=in_path)
+  z_scores <- lapply(loci, FUN=read_z_scores, path=path)
   names(z_scores) <- loci
 
   prior_variances <- Map(estimate_prior_variance, z_scores, ld_matrices) %>%

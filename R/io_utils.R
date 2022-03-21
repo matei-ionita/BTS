@@ -9,6 +9,7 @@
 #' @param loci A vector of loci.
 #' @export
 get_annot_inputs <- function(path, loci) {
+  path <- paste0(path,"/")
   groups <- get_annot_groups(path, loci[1])
   annot_inputs <- lapply(groups, parse_annot_inputs,
                          loci=loci, path=path) %>%
@@ -19,7 +20,7 @@ get_annot_inputs <- function(path, loci) {
 
 
 read_ld_matrix <- function(path, locus, reg=1e-5) {
-  file <- paste0(path, locus, "/ld.txt")
+  file <- paste0(path, "/", locus, "/ld.txt")
   
   ld_matrix <- read_delim(file, delim=" ", col_types = cols(), 
                           col_names = FALSE) %>% as.matrix()
@@ -30,7 +31,7 @@ read_ld_matrix <- function(path, locus, reg=1e-5) {
 }
 
 read_z_scores <- function(path, locus) {
-  file <- paste0(path, locus, "/z.txt")
+  file <- paste0(path, "/", locus, "/z.txt")
   z_score <- read_delim(file, delim=" ", col_types = cols(), 
                         col_names=FALSE)[[1]]
   return(z_score)
