@@ -16,26 +16,21 @@ NULL
 #' causal signals. Compute log likelihoods and store them for future
 #' use in posterior computations.
 #' @param in_path A path.
-#' @param ld_files A vector of files.
 #' @param loci A vector of locus names.
 #' @param d Maximal number of independent signals considered.
 #' @param thresh Numeric. Configurations are not stored if their log 
 #' Bayes factor is smaller than that of the size-1 configuration with 
 #' largest Bayes factor, minus the threshold.
 #' @export
-compute_likelihoods <- function(in_path, ld_files, loci, d=2, thresh=12) {
+compute_configs <- function(in_path, loci, d=2, thresh=12) {
   if (thresh < 10)
     warning("Using a threshold smaller than 10 may lead to inexact results.")
   
-  # Read annotations and other inputs
-  ld_matrices <- lapply(ld_files, FUN=read_ld_matrix, path=in_path, reg=1e-5)
+  ld_matrices <- lapply(loci, FUN=read_ld_matrix, path=in_path, reg=1e-5)
   names(ld_matrices) <- loci
 
   z_scores <- lapply(loci, FUN=read_z_scores, path=in_path)
   names(z_scores) <- loci
-
-  # clunky, change later
-  z_scores <- Map(remove_na_vars, z_scores, ld_matrices, loci)
 
   prior_variances <- Map(estimate_prior_variance, z_scores, ld_matrices) %>%
     unlist()

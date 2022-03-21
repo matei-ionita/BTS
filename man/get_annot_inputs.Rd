@@ -4,13 +4,17 @@
 \alias{get_annot_inputs}
 \title{Reads and organizes functional annotations.}
 \usage{
-get_annot_inputs(in_path, loci)
+get_annot_inputs(path, loci)
 }
 \arguments{
-\item{in_path}{Path to annotations.}
+\item{path}{Path to annotations.}
 
 \item{loci}{A vector of loci.}
 }
 \description{
-Currently assumes annotations are organized by tissue.
+Loci must have corresponding directories
+in the provided path. Assuming each locus directory
+contains annotation files in the format
+annotations_[group].tsv. [group] could be a tissue
+category, e.g. Brain or Blood.
 }

@@ -1,75 +1,71 @@
 
 #' @title Reads and organizes functional annotations.
-#' @description Currently assumes annotations are organized by tissue.
-#' @param in_path Path to annotations.
+#' @description Loci must have corresponding directories
+#' in the provided path. Assuming each locus directory
+#' contains annotation files in the format
+#' annotations_[group].tsv. [group] could be a tissue
+#' category, e.g. Brain or Blood.
+#' @param path Path to annotations.
 #' @param loci A vector of loci.
 #' @export
-get_annot_inputs <- function(in_path, loci) {
-  tissues <- get_tissues(in_path, loci)
-  annot_inputs <- lapply(tissues, get_tissue_inputs,
-                         loci=loci, in_path=in_path) %>%
+get_annot_inputs <- function(path, loci) {
+  groups <- get_annot_groups(path, loci[1])
+  annot_inputs <- lapply(groups, parse_annot_inputs,
+                         loci=loci, path=path) %>%
     do.call(what=c)
   annot_inputs <- add_null_input(annot_inputs)
   return(annot_inputs)
 }
 
 
-read_ld_matrix <- function(ld_file, path, reg=1e-5) {
-  # file <- paste0(path, "IBD.", locus, ".ld")
-  file <- paste0(path, ld_file)
-  ld_matrix <- read_delim(file, delim=" ", col_types = cols(), col_names = FALSE) %>%
-    as.matrix()
+read_ld_matrix <- function(path, locus, reg=1e-5) {
+  file <- paste0(path, locus, "/ld.txt")
   
+  ld_matrix <- read_delim(file, delim=" ", col_types = cols(), 
+                          col_names = FALSE) %>% as.matrix()
+
   # regularization as done by paintor: default 1e-5
   ld_matrix <- ld_matrix + diag(reg, nrow=nrow(ld_matrix))
   return(ld_matrix)
 }
 
-read_z_scores <- function(locus, path, tissue="Tongue") {
-  inputs <- read_inputs(locus, path, tissue=tissue)
-  z_score <- inputs$normalized_beta / inputs$SE
+read_z_scores <- function(path, locus) {
+  file <- paste0(path, locus, "/z.txt")
+  z_score <- read_delim(file, delim=" ", col_types = cols(), 
+                        col_names=FALSE)[[1]]
   return(z_score)
 }
 
-# read_z_scores <- function(locus, path) {
-#   z_score <- read_tsv(paste0(path, locus))$Zscore
-#   return(z_score)
-# }
 
-read_inputs <- function(locus, path, tissue) {
-  tissue_rep <- str_replace(tissue, "_", " ")
-  locus <- str_remove(locus, "kunkle.")
-  file <- paste0(path, "filer_overlap/", locus, "/annot_matrix/annot_matrix.", tissue_rep, ".annot")
-  inputs <- read_tsv(file, col_types = cols())
-  return(inputs)
+get_annot_groups <- function(path, locus) {
+  list.files(path=paste0(path, locus),
+             pattern="annotations") %>%
+    str_remove("annotations_") %>%
+    str_remove(".tsv")
+}
+
+
+read_annot <- function(path, locus, group) {
+  file <- paste0(path, locus, "/annotations_", group, ".tsv")
+  read_tsv(file, col_types = cols(.default="i"))
 }
 
 
 
-get_tissues <- function(in_path, loci) {
-  loci <- str_remove(loci, "kunkle.")
-  tissues <- list.files(path=paste0(in_path, "filer_overlap/",loci[1]),
-                        pattern=".annot", recursive=TRUE) %>%
-    str_remove("annot_matrix/annot_matrix.") %>%
-    str_remove(".annot")
-  return(setdiff(tissues, c("Not applicable", "Tissue category")))
-}
+parse_annot_inputs <- function(path, loci, group) {
+  message(group)
+  annots <- lapply(loci, FUN=read_annot, path=path, group=group)
+  names(annots) <- loci
 
-
-get_tissue_inputs <- function(tissue, loci, in_path) {
-  message(tissue)
-  inputs <- lapply(loci, FUN=read_inputs, path=in_path, tissue=tissue)
-  names(inputs) <- loci
-
-  annot_tissue <- grep(tissue, names(inputs[[1]]), value=TRUE)
-  annot_count <- vapply(annot_tissue, function(annot_name) {
-    lapply(inputs, function(input) sum(input[,annot_name])) %>%
+  annot_names <- names( annots[[1]] )
+  annot_count <- vapply(annot_names, function(annot_name) {
+    lapply(annots, function(annot) sum(annot[,annot_name])) %>%
       do.call(what=sum)
   }, numeric(1))
-  annot_tissue <- annot_tissue[which(annot_count>0)]
+  annot_names <- annot_names[which(annot_count>0)]
 
-  annots <- lapply(annot_tissue, function(annot_name) {
-    lapply(inputs, select_and_pad, annot_names=annot_name)
+  annots <- lapply(annot_names, function(annot_name) {
+    lapply(annots, select_and_pad, annot_names=annot_name)
   })
   return(annots)
 }
@@ -81,20 +77,6 @@ select_and_pad <- function(input_locus, annot_names) {
   return(as.matrix(annot_locus))
 }
 
-
-
-get_annot_inputs_example <- function(loci, in_path) {
-  inputs <- lapply(loci, function(locus) {
-    read_delim(paste0(in_path, locus, ".annotations"), delim=" ")
-  })
-  names(inputs) <- loci
-
-  annots <- lapply(inputs, function(input) {
-    baseline <- matrix(1, nrow=nrow(input), ncol=1)
-    as.matrix(cbind(baseline, input[,"DHS"]))
-  })
-  return(list(annots))
-}
 
 
 add_null_input <- function(annot_inputs) {

@@ -11,3 +11,7 @@ Encoding: UTF-8
 Imports: Rcpp (>= 1.0.8), ggplot2, magrittr, readr, stringr, tibble, dplyr
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 7.1.1
+Suggests: 
+    rmarkdown,
+    knitr
+VignetteBuilder: knitr
