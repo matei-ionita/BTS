@@ -1,0 +1,69 @@
+---
+title: "BTS"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{BTS}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, warning=FALSE}
+library(BTS)
+library(tidyverse)
+```
+
+Path to example data: 14 genomic loci of various sizes, from GWAS on Inflammatory Bowel Disease (IBD).
+```{r data}
+data_path <- system.file("extdata", "IBD", package="BTS")
+loci <- list.files(data_path)
+```
+
+Compute and store Bayes factors for configurations of up to d causal variants. This uses GWAS
+summary statistics and LD matrices, but not annotations.
+```{r configs}
+configs <- compute_configs(data_path, loci, d=2)
+```
+
+Read functional annotations and fit one model for each annotation. Annotations which are 0 for all
+variants in all loci are silently ignored.
+```{r model, message=FALSE, results='hide'}
+annot_inputs <- get_annot_inputs(data_path, loci)
+results <- lapply(annot_inputs, run_em, configs=configs)
+```
+
+Get a summary and comparison of all models. Results are sorted by p-value, with most significant
+at the top.
+```{r summary}
+options(width=300)
+get_model_summary(results, annot_inputs)
+```
+
+Interpretation:
+
+* For each model, there are two enrichment parameters, which control the priors of variants.
+The formula for the prior is 1/(1 + exp(enrich_baseline + enrich_annot * annot)).
+    + enrich_baseline decreases the probability of all variants to be causal in this model,
+    irrespective of annotation.
+    + enrich_annot decreases the probability of variants with the annotation to be causal in this
+    model. Thus, positive/negative enrich_annot means that variants with the annotation are
+    less/more likely to be causal, respectively.
+* The p-value shown is from likelihood ratio test, comparing data likelihood under the model
+using the annotation with the the null model (no annotation).
+* n_annot is the number of variants from all loci which have this annotation.
+* frac_annot is the fraction of variants from all loci which have this annotation.
+
+For this example data, we see that the Blood and Digestive enhancer annotations are the most statistically
+significant, and that variants with these annotations are more likely to be casual. This makes sense,
+because IBD is an autoimmune disease which affects the digestive system.
+
+
+To be continued...
+
+
