@@ -7,15 +7,16 @@
 compute_configs(path, loci, d = 2, thresh = 12)
 }
 \arguments{
-\item{loci}{A vector of locus names.}
+\item{path}{A path to data.}
 
-\item{d}{Maximal number of independent signals considered.}
+\item{loci}{A vector of locus names; each locus must have a sub-directory
+under the given path.}
+
+\item{d}{Integer, maximal number of independent signals considered.}
 
 \item{thresh}{Numeric. Configurations are not stored if their log 
 Bayes factor is smaller than that of the size-1 configuration with 
 largest Bayes factor, minus the threshold.}
-
-\item{in_path}{A path.}
 }
 \description{
 Enumerate over all configurations with at most d

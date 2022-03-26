@@ -40,7 +40,6 @@ run_em <- function(configs, annot,
     enrich <- optim_res$par
     optim_val <- -1 * optim_res$value
 
-
     # Convergence criterion
     if (abs((total_log_post-prev_log_post)) < tol) {
       message(paste("Converged after", iter, "iterations."))
@@ -63,6 +62,8 @@ run_em <- function(configs, annot,
 }
 
 
+# Initialize enrichment parameters to give
+# uniform prior over all variants.
 initialize_enrich <- function(annot) {
   loci_size <- vapply(annot, nrow, integer(1))
   mean_size <- sum(loci_size)/length(loci_size)
@@ -74,11 +75,27 @@ initialize_enrich <- function(annot) {
 }
 
 
+# Function to optimize
+data_lik <- function(enrich, posteriors, annot) {
+  enrich_rep <- rep(list(enrich), length(annot))
+  lik <- Map(data_lik_locus, posteriors, enrich_rep, annot) %>%
+    Reduce(f="+")
+  return(-lik)
+}
+
 data_lik_locus <- function(locus_post, enrich, locus_annot) {
   exponent <- locus_annot %*% matrix(enrich, ncol=1)
   lik_locus <- -locus_post * log(1 + exp(exponent)) -
     (1-locus_post) * log(1+exp(-exponent))
   return(sum(lik_locus))
+}
+
+# Gradient of function to optimize
+grad_lik <- function(enrich, posteriors, annot) {
+  enrich_rep <- rep(list(enrich), length(annot))
+  grad <- Map(grad_lik_locus, posteriors, enrich_rep, annot) %>%
+    Reduce(f="+")
+  return(-grad)
 }
 
 grad_lik_locus <- function(locus_post, enrich, locus_annot) {
@@ -87,20 +104,6 @@ grad_lik_locus <- function(locus_post, enrich, locus_annot) {
   grad_lik_locus <- -(locus_post / (1 + exp(-exponent))) %*% locus_annot +
     ((1-locus_post) / (1 + exp(exponent))) %*% locus_annot
   return(grad_lik_locus)
-}
-
-data_lik <- function(enrich, posteriors, annot) {
-  enrich_rep <- rep(list(enrich), length(annot))
-  lik <- Map(data_lik_locus, posteriors, enrich_rep, annot) %>%
-    Reduce(f="+")
-  return(-lik)
-}
-
-grad_lik <- function(enrich, posteriors, annot) {
-  enrich_rep <- rep(list(enrich), length(annot))
-  grad <- Map(grad_lik_locus, posteriors, enrich_rep, annot) %>%
-    Reduce(f="+")
-  return(-grad)
 }
 
 
@@ -118,11 +121,11 @@ get_model_summary <- function(results, annot_inputs) {
 
   model_summary <- lapply(results[seq(2,n)], function(result) {
     annot_name <- names(result$enrich)[2]
-    tissue <- str_split(annot_name, "___")[[1]][2]
-    tibble(tissue=tissue,
-           annotation=annot_name,
+    tibble(annotation=annot_name,
            enrich_baseline=result$enrich[1],
            enrich_annot=result$enrich[2],
+           prior_odds=(1+exp( result$enrich[1] )) /
+             (1+exp( result$enrich[1]+result$enrich[2] )),
            log_post=result$log_post)
   }) %>% do.call(what=rbind)
 
