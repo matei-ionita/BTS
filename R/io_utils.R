@@ -34,8 +34,9 @@ read_ld_matrix <- function(path, locus, reg=0) {
 
 read_z_scores <- function(path, locus) {
   file <- paste0(path, "/", locus, "/z.txt")
-  z_score <- read_delim(file, delim=" ", col_types = cols(), 
-                        col_names=FALSE, progress=FALSE)[[1]]
+  z_score <- read_delim(file, delim=" ", col_types = cols(),
+                        progress=FALSE)[[1]]
+
   return(z_score)
 }
 
@@ -50,7 +51,7 @@ get_annot_groups <- function(path, locus) {
 
 read_annot <- function(path, locus, group) {
   file <- paste0(path, locus, "/annotations_", group, ".tsv")
-  read_tsv(file, col_types = cols(.default="i"), progress=FALSE)
+  read_delim(file, delim=" ", col_types = cols(.default="i"), progress=FALSE)
 }
 
 

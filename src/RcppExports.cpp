@@ -12,17 +12,17 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // enumerate_configs
-Rcpp::List enumerate_configs(arma::vec& z0, arma::mat& ld, double her, int d, double thresh);
-RcppExport SEXP _BTS_enumerate_configs(SEXP z0SEXP, SEXP ldSEXP, SEXP herSEXP, SEXP dSEXP, SEXP threshSEXP) {
+Rcpp::List enumerate_configs(arma::vec& z0, arma::mat& ld, double pr_var, int d, double thresh);
+RcppExport SEXP _BTS_enumerate_configs(SEXP z0SEXP, SEXP ldSEXP, SEXP pr_varSEXP, SEXP dSEXP, SEXP threshSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec& >::type z0(z0SEXP);
     Rcpp::traits::input_parameter< arma::mat& >::type ld(ldSEXP);
-    Rcpp::traits::input_parameter< double >::type her(herSEXP);
+    Rcpp::traits::input_parameter< double >::type pr_var(pr_varSEXP);
     Rcpp::traits::input_parameter< int >::type d(dSEXP);
     Rcpp::traits::input_parameter< double >::type thresh(threshSEXP);
-    rcpp_result_gen = Rcpp::wrap(enumerate_configs(z0, ld, her, d, thresh));
+    rcpp_result_gen = Rcpp::wrap(enumerate_configs(z0, ld, pr_var, d, thresh));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -15,8 +15,16 @@ under the given path.}
 \item{d}{Integer, maximal number of independent signals considered.}
 
 \item{thresh}{Numeric. Configurations are not stored if their log 
-Bayes factor is smaller than that of the size-1 configuration with 
+Bayes factor is smaller than that of the size 1 configuration with 
 largest Bayes factor, minus the threshold.}
+}
+\value{
+A list of two elements: an integer matrix of shape (n_config,d)
+and a numeric vector of length n_config, where n_config is the number of 
+configurations of d variants with large enough Bayes factor, at most
+choose(n_variants, d). The rows of the matrix are indices of variants
+giving a causal configuration, and the corresponding row of the vector is
+the log Bayes factor of the configuration.
 }
 \description{
 Enumerate over all configurations with at most d

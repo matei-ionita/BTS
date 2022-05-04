@@ -29,7 +29,7 @@ bool is_duplicate_config(arma::uvec& tup, int d) {
 }
 
 
-double compute_log_bayes(arma::mat&z, arma::mat& ld, arma::uvec& tup, double her) {
+double compute_log_bayes(arma::mat&z, arma::mat& ld, arma::uvec& tup, double pr_var) {
 	arma::uvec unq = arma::unique(tup);
 	double size = unq.n_elem;
 
@@ -38,23 +38,23 @@ double compute_log_bayes(arma::mat&z, arma::mat& ld, arma::uvec& tup, double her
 	arma::mat ld_sub=ld.submat(unq,unq);
 
 	// log Bayes factor computed using matrix inversion lemma:
-	// ld^{-1} - (ld + her/size * ld^2)^{-1} = (I + her/size * ld)^{-1}
-	arma::mat mat_reg= arma::eye(size,size) + her / size * ld_sub;
+	// ld^{-1} - (ld + pr_var/size * ld^2)^{-1} = (I + pr_var/size * ld)^{-1}
+	arma::mat mat_reg= arma::eye(size,size) + pr_var / size * ld_sub;
 	arma::mat exponent=arma::trans(z_sub) * arma::inv_sympd(mat_reg) * z_sub;
-	double log_bayes = (-log(arma::det(mat_reg)) + her/size * exponent(0,0))/2;
+	double log_bayes = (-log(arma::det(mat_reg)) + pr_var/size * exponent(0,0))/2;
 
 	return log_bayes;
 }
 
 
 // compute maximum Bayes factor over configs with d=1
-double initialize_max_bayes(arma::mat&z, arma::mat& ld, double her, double n) {
+double initialize_max_bayes(arma::mat&z, arma::mat& ld, double pr_var, double n) {
 	double max_log_bayes = -arma::datum::inf;
 	arma::uvec tup=arma::uvec(1);
 
 	for (unsigned j=0; j<n; j++) {
 		tup(0)=j;
-		double log_bayes=compute_log_bayes(z,ld,tup,her);
+		double log_bayes=compute_log_bayes(z,ld,tup,pr_var);
 		if(log_bayes > max_log_bayes)
 			max_log_bayes=log_bayes;
 	}
@@ -64,13 +64,13 @@ double initialize_max_bayes(arma::mat&z, arma::mat& ld, double her, double n) {
 
 // [[Rcpp::export]]
 Rcpp::List enumerate_configs(arma::vec& z0, arma::mat& ld, 
-														 double her, int d, double thresh) {
+														 double pr_var, int d, double thresh) {
 	arma::mat z = arma::conv_to<arma::mat>::from(z0);
 
 	int n = z.size();
 	unsigned long long max = pow(n,d);
 
-	double max_log_bayes=initialize_max_bayes(z,ld,her,n);
+	double max_log_bayes=initialize_max_bayes(z,ld,pr_var,n);
 
 	unsigned long long i=0;
 	unsigned long long cnt=0;
@@ -86,7 +86,7 @@ Rcpp::List enumerate_configs(arma::vec& z0, arma::mat& ld,
 			continue;
 		}
 
-		log_bayes=compute_log_bayes(z, ld, tup, her);
+		log_bayes=compute_log_bayes(z, ld, tup, pr_var);
 		if (max_log_bayes - log_bayes < thresh)
 			cnt++;
 		i++;
@@ -109,7 +109,7 @@ Rcpp::List enumerate_configs(arma::vec& z0, arma::mat& ld,
 			i++;
 			continue;
 		}
-		log_bayes=compute_log_bayes(z, ld, tup, her);
+		log_bayes=compute_log_bayes(z, ld, tup, pr_var);
 		if (max_log_bayes - log_bayes >=thresh) {
 			i++;
 			continue;

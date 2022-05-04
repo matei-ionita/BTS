@@ -18,6 +18,16 @@ convergence.}
 
 \item{tol}{Tolerance for convergence.}
 }
+\value{
+A list of items:
+\itemize{
+\item posteriors - A list giving the vector of variant posterior
+probabilities for all loci.
+\item enrich - A named vector giving the values of track enrichments.
+\item log_post - The total data likelihood under this model.
+\item log_post_locus - A vector of data likelihoods for each locus.
+}
+}
 \description{
 Given likelihoods and annotations for all loci,
 find optimal values for variant posterior probabilities to

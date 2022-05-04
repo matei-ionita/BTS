@@ -20,8 +20,14 @@ NULL
 #' under the given path.
 #' @param d Integer, maximal number of independent signals considered.
 #' @param thresh Numeric. Configurations are not stored if their log 
-#' Bayes factor is smaller than that of the size-1 configuration with 
+#' Bayes factor is smaller than that of the size 1 configuration with 
 #' largest Bayes factor, minus the threshold.
+#' @return A list of two elements: an integer matrix of shape (n_config,d)
+#' and a numeric vector of length n_config, where n_config is the number of 
+#' configurations of d variants with large enough Bayes factor, at most
+#' choose(n_variants, d). The rows of the matrix are indices of variants
+#' giving a causal configuration, and the corresponding row of the vector is
+#' the log Bayes factor of the configuration.
 #' @export
 compute_configs <- function(path, loci, d=2, thresh=12) {
   if (!(as.integer(d)==d) || d <= 0)
@@ -38,15 +44,14 @@ compute_configs <- function(path, loci, d=2, thresh=12) {
   z_scores <- lapply(loci, FUN=read_z_scores, path=path)
   check <- Map(check_GWAS_LD_input, ld_matrices, z_scores, loci)
 
-  # Estimate heritability of trait using truncated eigendecomposition.
-  # Used as prior for the variance of effect sizes.
-  her <- Map(estimate_her, ld_matrices, z_scores)
+  # prior for the variance of effect sizes.
+  pr_var <- lapply(z_scores, function(z) 16)
   
   # Store a sparse array of relevant configurations: i-th row
   # contains the variants which are causal for i-th config.
   # Separate numeric vector gives log Bayes factors of configs.
   configs <- Map(enumerate_configs, z_scores, ld_matrices,
-                 her, rep(d, length(z_scores)), thresh=thresh)
+                 pr_var, rep(d, length(z_scores)), thresh=thresh)
   return(configs)
 }
 
@@ -60,44 +65,6 @@ check_GWAS_LD_input <- function(ld, z, locus) {
   if(nrow(ld) != length(z))
     stop(paste0(locus, ": different number of variants in LD matrix
                  and z-scores."))
-}
-
-
-# Estimate heritability of trait based on variants in a locus.
-# The observed effects z are related to true effects z0 by
-# z=ld %*% z0. Heritability is t(z0) %*% ld %*% z0 =
-# t(z) %*% ld^{-1} %*% z. Since ld is typically singular,
-# using a truncated eigendecomposition.
-estimate_her <- function(ld, z, prop_eig = 0.95) {
-  n <- nrow(ld)
-  eigen <- eigen(ld, symmetric=TRUE)
-  
-  trunc_inv <- numeric(n)
-  total_eig <- 0
-  max_k <- 1
-  cutoff <- prop_eig * n
-  
-  for (i in seq(n)) {
-    total_eig <- total_eig + eigen$values[i]
-    if (total_eig < cutoff | i==1) {
-      max_k <- i
-      trunc_inv[i] <- 1 / eigen$values[i]
-    }
-  }
-  
-  if (n==1) {
-    trunc_ld_inv <- trunc_inv * eigen$vectors %*% t(eigen$vectors)
-  } else {
-    trunc_ld_inv <- eigen$vectors %*% diag(trunc_inv) %*% t(eigen$vectors)
-  }
-  her <- t(z) %*% trunc_ld_inv %*% z - max_k
-  
-  if (her <= 0) {
-    # Clunky: find a better fix
-    return(estimate_her(ld,z,prop_eig=prop_eig+0.01))
-  }
-  
-  return(min(her[1,1],500))
 }
 
 

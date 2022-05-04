@@ -13,6 +13,14 @@
 #' EM iterations after which algorithm stops regardless of
 #' convergence.
 #' @param tol Tolerance for convergence.
+#' @return A list of items:
+#' \itemize{
+#' \item posteriors - A list giving the vector of variant posterior
+#' probabilities for all loci.
+#' \item enrich - A named vector giving the values of track enrichments.
+#' \item log_post - The total data likelihood under this model.
+#' \item log_post_locus - A vector of data likelihoods for each locus.
+#' }
 #' @export
 run_em <- function(configs, annot,
                    max_iter=20, tol=1e-2) {
