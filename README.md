@@ -9,7 +9,7 @@ Then devtools can install BTS directly from this repository.
 install.packages("devtools")
 install.packages("Rcpp")
 install.packages("RcppArmadillo")
-devtools::install_github("matei-ionita/BTS")
+devtools::install_github("matei-ionita/BTS", build_vignettes=TRUE)
 ```
 
 ## Summary
