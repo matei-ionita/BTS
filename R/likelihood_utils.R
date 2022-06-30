@@ -3,9 +3,9 @@
 #' @importFrom stats optim p.adjust pchisq
 #' @importFrom magrittr "%>%"
 #' @import ggplot2
-#' @importFrom readr read_tsv read_delim cols
+#' @importFrom readr read_tsv read_delim cols write_tsv
 #' @importFrom stringr str_remove str_replace str_split
-#' @importFrom tibble tibble
+#' @importFrom tibble tibble as_tibble
 #' @importFrom dplyr arrange
 NULL
 
@@ -45,7 +45,7 @@ compute_configs <- function(path, loci, d=2, thresh=12) {
   check <- Map(check_GWAS_LD_input, ld_matrices, z_scores, loci)
 
   # prior for the variance of effect sizes.
-  pr_var <- lapply(z_scores, function(z) 16)
+  pr_var <- lapply(z_scores, function(z) 9)
   
   # Store a sparse array of relevant configurations: i-th row
   # contains the variants which are causal for i-th config.

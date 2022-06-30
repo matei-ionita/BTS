@@ -155,3 +155,34 @@ get_model_summary <- function(results, annot_inputs) {
   return(model_summary %>% arrange(p))
 }
 
+
+get_model_summary_pairs <- function(results, annot_inputs, result_null) {
+  n <- length(results)
+
+  model_summary <- lapply(results, function(result) {
+    annot_name <- names(result$enrich)[2]
+    tibble(tissue=annot_name,
+           enrich_baseline=result$enrich[1],
+           enrich_1=result$enrich[2],
+           enrich_2=result$enrich[3],
+           log_post=result$log_post)
+  }) %>% do.call(what=rbind)
+  
+  L0 <- result_null$log_post
+  row.names(model_summary) <- NULL
+  
+  model_summary$p <- (2*model_summary$log_post - 2*L0) %>%
+    pchisq(df=2, lower.tail = FALSE)
+  model_summary$FDR <- p.adjust(model_summary$p, method="fdr")
+  
+  # model_summary$n_annot <- vapply(annot_inputs[seq(2,n)], function(annot) {
+  #   lapply(annot, function(x) sum(x[,2])) %>%
+  #     do.call(what=sum)
+  # }, numeric(1))
+  # n_total <- vapply(annot_inputs[[1]], nrow, integer(1)) %>% sum()
+  # model_summary$frac_annot <- model_summary$n_annot / n_total
+  
+  
+  return(model_summary %>% arrange(p))
+}
+

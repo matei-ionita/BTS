@@ -96,3 +96,35 @@ add_null_input <- function(annot_inputs) {
 
 
 
+write_output <- function(results, model_summary, loci, out_path) {
+  # Write model summary
+  out_fn <- paste0(out_path, "/model_summary.tsv")
+  write_tsv(model_summary, out_fn)
+  
+  # Write locus likelihood by model
+  model_names <- c("Null", sapply(results[seq(2,length(results))], 
+                                  function(result) names(result$enrich)[2] ))
+  
+  log_lik <- lapply(results, function(result) unlist(result$log_post_locus)) %>%
+    do.call(what=cbind)
+  colnames(log_lik) <- model_names
+  log_lik <- cbind("locus" = loci, log_lik) %>% as_tibble()
+  
+  out_fn <- paste0(out_path, "/locus_log_lik_by_model.tsv")
+  write_tsv(log_lik, out_fn)
+  
+  # Write variant posterior probabilities
+  for (i in seq_along(loci)) {
+    post_locus <- lapply(results, function(result) {
+      return(result$posteriors[[i]])
+    }) %>% do.call(what=cbind) %>% as_tibble()
+    names(post_locus) <- model_names
+    
+    out_fn <- paste0(out_path, "/variant_posteriors_", loci[i], ".tsv")
+    write_tsv(post_locus, out_fn)
+  }
+}
+
+
+
+
