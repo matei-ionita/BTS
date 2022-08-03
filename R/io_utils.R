@@ -21,6 +21,20 @@ get_annot_inputs <- function(path, loci) {
 }
 
 
+get_variant_names <- function(path, loci) {
+  path <- paste0(path,"/")
+  groups <- get_annot_groups(path, loci[1])
+  variant_names <- lapply(loci, var_names_locus, group = groups[1], path=path)
+  return(variant_names)
+}
+
+
+var_names_locus <- function(locus, group, path) {
+  file <- paste0(path, locus, "/annotations_", group, ".tsv")
+  info <- read_delim(file, delim=" ", col_types = cols(.default="i"), progress=FALSE)
+  ##### FIX THIS #####
+}
+
 read_ld_matrix <- function(path, locus, reg=0) {
   file <- paste0(path, "/", locus, "/ld.txt")
   ld_matrix <- read_delim(file, delim=" ", col_types = cols(), 
@@ -42,11 +56,22 @@ read_z_scores <- function(path, locus) {
 
 
 get_annot_groups <- function(path, locus) {
-  list.files(path=paste0(path, locus),
-             pattern="annotations") %>%
-    str_remove("annotations_") %>%
+  files <- list.files(path=paste0(path, locus),
+                      pattern="annotations")
+  
+  keep <- vapply(files, function(file) {
+    x <- read_delim(paste0(path, locus, "/", file), col_types = cols(), progress=FALSE)
+    all(vapply(x, is.numeric, logical(1)))
+  }, logical(1))
+
+  if(!all(keep))
+    warning("Skipping annotation files containing non-numeric values.")
+
+  files[keep] %>%  
+  str_remove("annotations_") %>%
     str_remove(".tsv")
 }
+  
 
 
 read_annot <- function(path, locus, group) {
@@ -96,10 +121,10 @@ add_null_input <- function(annot_inputs) {
 
 
 
-write_output <- function(results, model_summary, loci, out_path) {
+write_output <- function(results, model_summary, loci, out_path, pval_cutoff = 0.5) {
   # Write model summary
   out_fn <- paste0(out_path, "/model_summary.tsv")
-  write_tsv(model_summary, out_fn)
+  write_tsv(model_summary, out_fn, progress=FALSE)
   
   # Write locus likelihood by model
   model_names <- c("Null", sapply(results[seq(2,length(results))], 
@@ -108,23 +133,71 @@ write_output <- function(results, model_summary, loci, out_path) {
   log_lik <- lapply(results, function(result) unlist(result$log_post_locus)) %>%
     do.call(what=cbind)
   colnames(log_lik) <- model_names
-  log_lik <- cbind("locus" = loci, log_lik) %>% as_tibble()
+
+  log_lik_diff <- sweep( log_lik , 1, log_lik[,"Null"])
+  pvals <- pchisq(2*log_lik_diff, df=2, lower.tail = FALSE) %>% 
+    as_tibble() %>%
+    mutate(locus = loci) %>%
+    relocate(locus)
+  
+  log_lik <- log_lik %>%
+    as_tibble() %>%
+    mutate(locus = loci) %>%
+    relocate(locus)
   
   out_fn <- paste0(out_path, "/locus_log_lik_by_model.tsv")
-  write_tsv(log_lik, out_fn)
+  write_tsv(log_lik, out_fn, progress=FALSE)
+  out_fn <- paste0(out_path, "/locus_pval_by_model.tsv")
+  write_tsv(pvals, out_fn, progress=FALSE)
   
   # Write variant posterior probabilities
-  for (i in seq_along(loci)) {
+  post_tall <- lapply(seq_along(loci), function(i) {
+    
     post_locus <- lapply(results, function(result) {
       return(result$posteriors[[i]])
-    }) %>% do.call(what=cbind) %>% as_tibble()
-    names(post_locus) <- model_names
+    }) %>% do.call(what=cbind)
+    
+    colnames(post_locus) <- model_names
+    post_locus <- as_tibble(post_locus)
     
     out_fn <- paste0(out_path, "/variant_posteriors_", loci[i], ".tsv")
-    write_tsv(post_locus, out_fn)
-  }
+    write_tsv(post_locus, out_fn, progress=FALSE)
+    
+    post_locus_tall <- lapply(model_names, function(mod) get_credible_set(pull(post_locus, mod))) %>%
+      do.call(what=rbind)
+    post_locus_tall$locus <- loci[i]
+    post_locus_tall$locus_size <- nrow(post_locus)
+    post_locus_tall$model <- model_names
+
+    return(post_locus_tall)
+  }) %>% do.call(what=rbind)
+  
+  # Write locus prioritization
+  p_tall <- pvals %>%
+    pivot_longer(-locus, names_to="model", values_to="pval") %>%
+    inner_join(post_tall, by=c("locus", "model")) %>%
+    arrange(pval, model)
+  
+  out_fn <- paste0(out_path, "/locus_prioritization.tsv")
+  write_tsv(p_tall, out_fn, progress=FALSE)
+  
 }
 
+
+get_credible_set <- function(probs, d, frac=0.8) {
+  s <- sum(probs)
+  or <- order(probs, decreasing = TRUE)
+  
+  cumsum <- 0
+  i <- 0
+  while(cumsum < frac * s) {
+    i <- i+1
+    cumsum <- cumsum + probs[or[i]]
+  }
+  
+  return(tibble(expected_n_causal = s, credible_set_size = i, 
+                credible_set = paste(or[seq_len(i)], collapse = ",")))
+}
 
 
 

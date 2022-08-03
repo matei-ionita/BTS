@@ -12,6 +12,8 @@ BTS <- function(in_path, out_path, d=2) {
     stop("d must be a positive integer.")
   
   loci <- list.files(in_path)
+  ##### FIX THIS #####
+  # variant_names <- get_variant_names(in_path, loci)
   
   configs <- compute_configs(in_path, loci, d=d)
   annot_inputs <- get_annot_inputs(in_path, loci)

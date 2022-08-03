@@ -6,7 +6,8 @@
 #' @importFrom readr read_tsv read_delim cols write_tsv
 #' @importFrom stringr str_remove str_replace str_split
 #' @importFrom tibble tibble as_tibble
-#' @importFrom dplyr arrange
+#' @importFrom dplyr arrange select filter mutate relocate pull inner_join
+#' @importFrom tidyr pivot_longer pivot_wider
 NULL
 
 
